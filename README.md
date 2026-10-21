@@ -1,59 +1,192 @@
-# Overview
-This repository contains a React frontend, and an Express backend that the frontend connects to.
+# AWS DevOps Challenge — React, Express, Docker, Terraform & CI/CD
 
-# Objective
-Deploy the frontend and backend to somewhere publicly accessible over the internet. The AWS Free Tier should be more than sufficient to run this project, but you may use any platform and tooling you'd like for your solution.
+A full-stack application deployed to AWS using containerization, infrastructure as code, and a Jenkins-based deployment workflow.
 
-Fork this repo as a base. You may change any code in this repository to suit the infrastructure you build in this code challenge.
+## Live Application
 
-# Submission
-1. A github repo that has been forked from this repo with all your code.
-2. Modify this README file with instructions for:
-* Any tools needed to deploy your infrastructure
-* All the steps needed to repeat your deployment process
-* URLs to the your deployed frontend.
+- **Frontend:** http://devops-challenge-alb-279600759.us-east-1.elb.amazonaws.com/
+- **AWS Region:** `us-east-1`
 
-# Evaluation
-You will be evaluated on the ease to replicate your infrastructure. This is a combination of quality of the instructions, as well as any scripts to automate the overall setup process.
+The frontend and backend are served through an AWS Application Load Balancer. The application was tested with HTTP 200 responses from both frontend and backend endpoints.
 
-# Setup your environment
-Install nodejs. Binaries and installers can be found on nodejs.org.
-https://nodejs.org/en/download/
+## Project Overview
 
-For macOS or Linux, Nodejs can usually be found in your preferred package manager.
-https://nodejs.org/en/download/package-manager/
+This project takes a React frontend and Express backend and deploys them as containerized services on Amazon ECS.
 
-Depending on the Linux distribution, the Node Package Manager `npm` may need to be installed separately.
+It demonstrates infrastructure provisioning, container builds, application deployment, CI/CD workflow automation, service recovery, and frontend autoscaling configuration.
 
-# Running the project
-The backend and the frontend will need to run on separate processes. The backend should be started first.
+## Architecture
+
+```text
+Developer
+   |
+   v
+GitHub Repository
+   |
+   v
+Jenkins CI/CD Workflow
+   |
+   v
+Build and publish Docker images
+   |
+   v
+Amazon ECR
+   |
+   v
+Amazon ECS Services
+   |
+   +---- Frontend container
+   |
+   +---- Backend container
+   |
+   v
+Application Load Balancer
+   |
+   v
+Public HTTP endpoint
 ```
+
+Terraform configuration is maintained in `infrastructure/terraform/`.
+
+## Technologies Used
+
+- **AWS:** ECS, ECR, Application Load Balancer, VPC, subnets, and CloudWatch alarms
+- **Terraform:** Infrastructure as code
+- **Docker:** Container images for the frontend and backend
+- **Docker Compose:** Local multi-container development
+- **Jenkins:** CI/CD workflow
+- **Git and GitHub:** Source control and project hosting
+- **React:** Frontend application
+- **Node.js and Express:** Backend API
+
+## Repository Structure
+
+```text
+.
+├── backend/                  # Express backend
+├── frontend/                 # React frontend and Nginx configuration
+├── infrastructure/
+│   └── terraform/            # AWS infrastructure definitions
+├── compose.yaml              # Local container orchestration
+├── .gitignore
+└── README.md
+```
+
+## Prerequisites
+
+For local development:
+
+- Git
+- Node.js and npm, or Docker with Docker Compose
+
+For AWS infrastructure deployment:
+
+- An AWS account
+- AWS CLI configured with appropriate permissions
+- Terraform installed
+- Docker installed
+- Access to the GitHub repository and Jenkins deployment environment
+
+AWS resources may incur charges. Review resource pricing and clean up resources when they are no longer needed.
+
+## Run Locally with Docker Compose
+
+From the repository root:
+
+```bash
+docker compose up --build
+```
+
+- Frontend: http://localhost:3000
+- Backend: http://localhost:8080
+
+Stop the containers with:
+
+```bash
+docker compose down
+```
+
+The Compose configuration builds the frontend and backend from their respective directories.
+
+## Run Without Docker
+
+Start the backend first:
+
+```bash
 cd backend
 npm ci
 npm start
 ```
-The backend should response to a GET request on `localhost:8080`.
 
-With the backend started, the frontend can be started.
-```
+In a second terminal, start the frontend:
+
+```bash
 cd frontend
 npm ci
 npm start
 ```
-The frontend can be accessed at `localhost:3000`. If the frontend successfully connects to the backend, a message saying "SUCCESS" followed by a guid should be displayed on the screen.  If the connection failed, an error message will be displayed on the screen.
 
-# Configuration
-The frontend has a configuration file at `frontend/src/config.js` that defines the URL to call the backend. This URL is used on `frontend/src/App.js#12`, where the front end will make the GET call during the initial load of the page.
+The frontend is available at `http://localhost:3000`, and the backend listens on port `8080`.
 
-The backend has a configuration file at `backend/config.js` that defines the host that the frontend will be calling from. This URL is used in the `Access-Control-Allow-Origin` CORS header, read in `backend/index.js#14`
+## AWS Infrastructure
 
-# Optional Extras
-The core requirement for this challenge is to get the provided application up and running for consumption over the public internet. That being said, there are some opportunities in this code challenge to demonstrate your skill sets that are above and beyond the core requirement.
+Terraform files are located in `infrastructure/terraform/`.
 
-A few examples of extras for this coding challenge:
-1. Dockerizing the application
-2. Scripts to set up the infrastructure
-3. Providing a pipeline for the application deployment
-4. Running the application in a serverless environment
+The configuration defines AWS resources for the networking layer, container registries, ECS cluster, and application services.
 
-This is not an exhaustive list of extra features that could be added to this code challenge. At the end of the day, this section is for you to demonstrate any skills you want to show that’s not captured in the core requirement.
+Review the Terraform configuration and confirm the AWS account, region, variables, and permissions before applying changes.
+
+From the Terraform directory:
+
+```bash
+cd infrastructure/terraform
+terraform init
+terraform validate
+terraform plan
+```
+
+Inspect the plan carefully before applying it. Applying Terraform can create, modify, or destroy billable resources. Do not run `terraform apply` against an existing environment without confirming that the configuration and state refer to the intended infrastructure.
+
+The default region is `us-east-1`.
+
+## CI/CD Workflow
+
+Jenkins was used to run the deployment workflow for the ECS services.
+
+The workflow is intended to build and publish application images and request deployment updates to the ECS services. Deployment status should also be checked in AWS after each run.
+
+Jenkins configuration may be maintained separately from this repository.
+
+## Reliability and Scaling
+
+The following checks were performed during the project:
+
+- Sent five frontend requests and five backend requests; all ten returned HTTP 200.
+- Stopped a frontend ECS task and verified that ECS returned to one running task.
+- Registered frontend ECS service autoscaling with a minimum capacity of one task and a maximum of two.
+- Configured and verified a CPU target-tracking scaling policy with a 60% target.
+- Confirmed that AWS created CloudWatch alarms for scaling.
+
+The autoscaling policy was verified in AWS. An actual scale-out under sustained load has not yet been demonstrated.
+
+## Security Notes
+
+- Do not commit AWS credentials, access keys, private keys, `.env` files, Terraform state, or saved Terraform plans.
+- The root and Terraform `.gitignore` files exclude common sensitive local files.
+- Use IAM roles and least-privilege permissions wherever possible.
+- Keep Terraform state in a properly secured backend for collaborative or production use.
+- The live application currently uses HTTP. HTTPS and an appropriate TLS certificate should be configured before treating the endpoint as production-ready.
+
+## Future Improvements
+
+- Demonstrate and document a real autoscaling event under controlled load.
+- Configure and test HTTPS with a TLS certificate.
+- Add automated application tests to the CI/CD workflow.
+- Add deployment health verification and rollback handling.
+- Document infrastructure teardown and cost-management procedures.
+
+## Author
+
+**Emily — Cloud and DevOps Portfolio Project**
+
+This project was built to develop practical experience with AWS, Docker, Terraform, ECS, CI/CD, and operational reliability.
