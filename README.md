@@ -151,23 +151,28 @@ The default region is `us-east-1`.
 
 ## CI/CD Workflow
 
-Jenkins was used to run the deployment workflow for the ECS services.
+Jenkins runs the deployment pipeline defined in the repository's `Jenkinsfile`.
 
-The workflow is intended to build and publish application images and request deployment updates to the ECS services. Deployment status should also be checked in AWS after each run.
+The `devops-challenge-pipeline` job is configured to use Pipeline script from SCM:
+- **Source control:** Git
+- **Repository:** https://github.com/CloudbyEmily/devops-code-challenge1
+- **Branch:** `*/main`
+- **Pipeline script path:** `Jenkinsfile`
 
-Jenkins configuration may be maintained separately from this repository.
+To run a deployment, open the Jenkins job, select **Build Now**, and review the console output. The pipeline builds and publishes the frontend and backend Docker images, updates the ECS task definitions and services, and waits for the services to become stable.
+
+AWS credentials are configured in Jenkins using credential IDs. Secret values must not be stored in this README or committed to GitHub. Verify the latest build result in Jenkins and the service status in AWS after deployment.
 
 ## Reliability and Scaling
 
-The following checks were performed during the project:
-
+The following checks and configurations were completed during the project:
 - Sent five frontend requests and five backend requests; all ten returned HTTP 200.
 - Stopped a frontend ECS task and verified that ECS returned to one running task.
-- Registered frontend ECS service autoscaling with a minimum capacity of one task and a maximum of two.
-- Configured and verified a CPU target-tracking scaling policy with a 60% target.
-- Confirmed that AWS created CloudWatch alarms for scaling.
-
-The autoscaling policy was verified in AWS. An actual scale-out under sustained load has not yet been demonstrated.
+- Configured and verified frontend ECS service autoscaling with a minimum capacity of 1 task and a maximum capacity of 4 tasks.
+- Configured and verified a CPU target-tracking scaling policy targeting 50% average CPU utilization.
+- The frontend ECS task is configured with 512 CPU units and 1 GB of memory.
+- Confirmed that AWS created CloudWatch alarms associated with scaling.
+Scaling test limitation: The autoscaling configuration was verified.
 
 ## Security Notes
 
